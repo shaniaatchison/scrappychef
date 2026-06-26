@@ -1,0 +1,43 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ScrappyChef specific
+.env
+auth_user.json
+connected_check.json
+recipe_test_output.json
+schema_check.json
+schema_check_final.json
+schema_output.json
+seed_verification.json
+sql_seed_result.json
+stats_schema.json
+user_check.json
+*.svg
+token.env
+signup.env
+deploy_log.txt
+migration_log.txt
+seed_log.txt

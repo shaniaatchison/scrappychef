@@ -1,0 +1,50 @@
+name: Render and Post Video
+on:
+  repository_dispatch:
+    types: [render_video]
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: scrappy-chef/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd scrappy-chef
+          npm ci
+
+      - name: Install FFmpeg
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Render Video
+        run: |
+          cd scrappy-chef
+          npx remotion render RecipeVideo out/video.mp4 --props='{"title": "${{ github.event.client_payload.title }}", "ingredients": ${{ toJson(github.event.client_payload.ingredients) }}, "instructions": "${{ github.event.client_payload.instructions }}"}'
+
+      - name: Upload to Supabase Storage
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VIDEO_ID: ${{ github.event.client_payload.video_id }}
+        run: |
+          # Use curl to upload to Supabase Storage
+          curl -X POST "${SUPABASE_URL}/storage/v1/object/generated_videos/${VIDEO_ID}.mp4"             -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}"             -H "Content-Type: video/mp4"             --data-binary "@scrappy-chef/out/video.mp4"
+
+      - name: Update Video Queue
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VIDEO_ID: ${{ github.event.client_payload.video_id }}
+        run: |
+          # Update the database with the video URL
+          VIDEO_URL="${SUPABASE_URL}/storage/v1/object/public/generated_videos/${VIDEO_ID}.mp4"
+          curl -X PATCH "${SUPABASE_URL}/rest/v1/video_queue?id=eq.${VIDEO_ID}"             -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}"             -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}"             -H "Content-Type: application/json"             -d "{\"video_url\": \"${VIDEO_URL}\"}"
