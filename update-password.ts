@@ -18,6 +18,7 @@ async function updatePassword() {
     return
   }
 
+  console.log('Found users:', users.users.map(u => u.email))
   const user = users.users.find(u => u.email === 'tester@example.com')
   if (!user) {
     console.error('User not found')

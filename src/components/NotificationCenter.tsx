@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Bell, AlertTriangle, X, Check, Lock } from 'lucide-react'
+import { Bell, AlertTriangle, X, Check, Lock, Smartphone } from 'lucide-react'
+import { subscribeToPush } from '../lib/notifications'
 
 export default function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false)
   const [alerts, setAlerts] = useState<any[]>([])
   const [isPremium, setIsPremium] = useState(false)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
+  const [subscribing, setSubscribing] = useState(false)
 
   useEffect(() => {
     fetchProfileAndAlerts()
@@ -17,15 +20,28 @@ export default function NotificationCenter() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('is_premium')
+      .select('is_premium, notifications_enabled')
       .eq('id', user.id)
       .single()
 
     setIsPremium(profile?.is_premium || false)
+    setNotificationsEnabled(profile?.notifications_enabled || false)
     
     if (profile?.is_premium) {
       await fetchExpiringItems(user.id)
     }
+  }
+
+  async function handleEnablePush() {
+    setSubscribing(true)
+    const success = await subscribeToPush()
+    if (success) {
+      setNotificationsEnabled(true)
+      alert('Push notifications enabled!')
+    } else {
+      alert('Failed to enable push notifications. Make sure you granted permission.')
+    }
+    setSubscribing(false)
   }
 
   async function fetchExpiringItems(userId: string) {
@@ -105,28 +121,49 @@ export default function NotificationCenter() {
                     Upgrade Now
                   </button>
                 </div>
-              ) : alerts.length > 0 ? (
-                <div className="divide-y divide-gray-50">
-                  {alerts.map(alert => (
-                    <div key={alert.id} className="p-4 space-y-1 group hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle size={14} className="text-red-500" />
-                        <span className="font-bold text-gray-900 text-sm">{alert.name}</span>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        {alert.days <= 0 ? 'Expired today!' : `Expires in ${alert.days} days`}
-                      </p>
-                    </div>
-                  ))}
-                </div>
               ) : (
-                <div className="p-8 text-center space-y-2">
-                  <div className="w-10 h-10 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto">
-                    <Check size={20} />
-                  </div>
-                  <p className="text-sm font-medium text-gray-900">All good!</p>
-                  <p className="text-xs text-gray-400">No items expiring soon.</p>
-                </div>
+                <>
+                  {!notificationsEnabled && (
+                    <div className="p-6 text-center border-b border-gray-50 bg-orange-50/30">
+                      <div className="w-10 h-10 bg-orange-100 text-orange-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <Smartphone size={20} />
+                      </div>
+                      <p className="text-xs font-bold text-gray-900 mb-1">Push Notifications</p>
+                      <p className="text-[10px] text-gray-500 mb-3">Get alerted on your device when food is about to expire.</p>
+                      <button 
+                        onClick={handleEnablePush}
+                        disabled={subscribing}
+                        className="w-full py-2 bg-orange-500 text-white rounded-xl text-[10px] font-black uppercase tracking-wider disabled:opacity-50"
+                      >
+                        {subscribing ? 'Enabling...' : 'Enable Alerts'}
+                      </button>
+                    </div>
+                  )}
+                  
+                  {alerts.length > 0 ? (
+                    <div className="divide-y divide-gray-50">
+                      {alerts.map(alert => (
+                        <div key={alert.id} className="p-4 space-y-1 group hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <AlertTriangle size={14} className="text-red-500" />
+                            <span className="font-bold text-gray-900 text-sm">{alert.name}</span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {alert.days <= 0 ? 'Expired today!' : `Expires in ${alert.days} days`}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center space-y-2">
+                      <div className="w-10 h-10 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto">
+                        <Check size={20} />
+                      </div>
+                      <p className="text-sm font-medium text-gray-900">All good!</p>
+                      <p className="text-xs text-gray-400">No items expiring soon.</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
             

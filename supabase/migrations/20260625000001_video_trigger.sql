@@ -24,7 +24,7 @@ BEGIN
         url := 'https://iynmkpdqvbyrrdbvqrra.supabase.co/functions/v1/trigger-video-render',
         headers := jsonb_build_object(
             'Content-Type', 'application/json',
-            'Authorization', 'Bearer ' || 'SERVICE_ROLE_KEY_PLACEHOLDER'
+            'Authorization', 'Bearer ' || '[YOUR_SUPABASE_SERVICE_ROLE_KEY]'
         ),
         body := jsonb_build_object(
             'video_id', NEW.id,

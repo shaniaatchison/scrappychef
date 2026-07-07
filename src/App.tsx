@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom'
-import { ChefHat, ShoppingBasket, History, User as UserIcon } from 'lucide-react'
+import { ChefHat, ShoppingBasket, History, User as UserIcon, ListChecks } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import Auth from './components/Auth'
 import Inventory from './components/Inventory'
@@ -10,15 +10,17 @@ import Profile from './components/Profile'
 import NotificationCenter from './components/NotificationCenter'
 import { Leaderboard } from './components/Leaderboard'
 import Disclaimer from './components/Disclaimer'
+import ShoppingList from './components/ShoppingList'
 import LinksPage from './pages/LinksPage'
 import StickerPage from './pages/StickerPage'
+import PricingPage from './pages/PricingPage'
 import type { User } from '@supabase/supabase-js'
 
 function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   
   // Hide bottom nav on special pages
-  const isSpecialPage = location.pathname === '/links' || location.pathname === '/sticker'
+  const isSpecialPage = location.pathname === '/links' || location.pathname === '/sticker' || location.pathname === '/pricing'
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -27,7 +29,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         <header className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10 shadow-sm">
           <div className="flex items-center justify-between max-w-lg mx-auto">
             <Link to="/" className="flex items-center gap-2 outline-none">
-              <ChefHat className="text-orange-500 w-8 h-8" />
+              <img src="/logo.png" alt="ScrappyChef" className="w-8 h-8 object-contain" />
               <h1 className="text-xl font-black text-gray-900 tracking-tight">ScrappyChef</h1>
             </Link>
             <div className="flex items-center gap-1">
@@ -74,6 +76,13 @@ function Layout({ children }: { children: React.ReactNode }) {
             >
               <ChefHat size={24} />
               <span className="text-[10px] font-bold uppercase tracking-tighter">Recipes</span>
+            </Link>
+            <Link 
+              to="/shopping-list"
+              className={`flex flex-col items-center gap-1 transition-all ${location.pathname === '/shopping-list' ? 'text-orange-500 scale-110' : 'text-gray-300 hover:text-gray-400'}`}
+            >
+              <ListChecks size={24} />
+              <span className="text-[10px] font-bold uppercase tracking-tighter">List</span>
             </Link>
             <Link 
               to="/history"
@@ -128,6 +137,7 @@ function App() {
     <Routes>
       <Route path="/links" element={<LinksPage />} />
       <Route path="/sticker" element={<StickerPage />} />
+      <Route path="/pricing" element={<PricingPage />} />
       
       <Route path="/" element={
         session ? (
@@ -161,6 +171,14 @@ function App() {
         session ? (
           <Layout>
             <CookingHistory />
+          </Layout>
+        ) : <Navigate to="/" />
+      } />
+
+      <Route path="/shopping-list" element={
+        session ? (
+          <Layout>
+            <ShoppingList />
           </Layout>
         ) : <Navigate to="/" />
       } />

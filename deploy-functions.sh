@@ -10,7 +10,7 @@ fi
 
 echo "Deploying Edge Functions to project $SUPABASE_PROJECT_ID..."
 
-FUNCTIONS=("generate-recipe" "scrappy-score-card" "stripe-webhook" "process-video-queue" "trigger-video-render" "create-checkout-session")
+FUNCTIONS=("generate-recipe" "scrappy-score-card" "stripe-webhook" "process-video-queue" "trigger-video-render" "create-checkout-session" "check-expiring-items" "auto-generate-video-content")
 
 for func in "${FUNCTIONS[@]}"; do
   echo "Deploying $func..."

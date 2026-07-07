@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { getSuggestedRecipes, markRecipeAsCooked, generateAiRecipe, getProfile, queueVideo } from '../lib/recipeEngine'
 import type { MatchResult } from '../lib/recipeEngine'
-import { ChefHat, Clock, AlertTriangle, CheckCircle2, ChevronRight, Loader2, Sparkles, CalendarDays, Lock, X, Share2 } from 'lucide-react'
+import { ChefHat, Clock, AlertTriangle, CheckCircle2, ChevronRight, Loader2, Sparkles, CalendarDays, Lock, X, Share2, Play } from 'lucide-react'
+import CookingTimer from './CookingTimer'
 
 export default function RecipeList() {
   const [recipes, setRecipes] = useState<MatchResult[]>([])
@@ -12,6 +13,7 @@ export default function RecipeList() {
   const [showPaywall, setShowPaywall] = useState(false)
   const [profile, setProfile] = useState<any>(null)
   const [mealPlan, setMealPlan] = useState<any[] | null>(null)
+  const [cookingMode, setCookingMode] = useState(false)
 
   useEffect(() => {
     loadRecipes()
@@ -165,6 +167,27 @@ export default function RecipeList() {
     )
   }
 
+  if (cookingMode && selectedRecipe) {
+    return (
+      <CookingTimer
+        title={selectedRecipe.title}
+        steps={selectedRecipe.steps_json}
+        onBack={() => setCookingMode(false)}
+        onComplete={async () => {
+          try {
+            await markRecipeAsCooked(selectedRecipe.id)
+            window.dispatchEvent(new CustomEvent('refresh-stats'))
+            setCookingMode(false)
+            setSelectedRecipe(null)
+            loadRecipes()
+          } catch (e: any) {
+            alert(e.message)
+          }
+        }}
+      />
+    )
+  }
+
   if (selectedRecipe) {
     return (
       <div className="space-y-6 animate-in fade-in duration-300">
@@ -238,6 +261,17 @@ export default function RecipeList() {
             >
               <CheckCircle2 size={20} />
               I Cooked This!
+            </button>
+
+            {/* Start Cooking Button */}
+            <button 
+              className="w-full py-4 bg-orange-500 text-white font-black rounded-2xl shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition-all active:scale-95 flex items-center justify-center gap-2 mt-2"
+              onClick={async () => {
+                setCookingMode(true)
+              }}
+            >
+              <Play size={20} />
+              Start Cooking → Step by Step
             </button>
 
             {!selectedRecipe.id.startsWith('ai-') && (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { getProfile, updateProfile, claimReferral } from '../lib/recipeEngine'
-import { Bell, CreditCard, User, LogOut, Loader2, Trophy, Gift } from 'lucide-react'
+import { getProfile, updateProfile, claimReferral, getUserTier } from '../lib/recipeEngine'
+import { Bell, CreditCard, User, LogOut, Loader2, Trophy, Gift, Star } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 
@@ -10,11 +10,22 @@ export default function Profile() {
   const [saving, setSaving] = useState(false)
   const [referralCode, setReferralCode] = useState('')
   const [claiming, setClaiming] = useState(false)
+  const [userTier, setUserTier] = useState<{ tier: string; isBetaTester: boolean }>({ tier: 'free', isBetaTester: false })
   const navigate = useNavigate()
 
   useEffect(() => {
     loadProfile()
+    loadTier()
   }, [])
+
+  async function loadTier() {
+    try {
+      const info = await getUserTier()
+      setUserTier(info)
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   async function loadProfile() {
     try {
@@ -91,6 +102,12 @@ export default function Profile() {
           <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-[10px] font-black uppercase">
             {profile?.is_premium ? 'Premium Member' : 'Free Member'}
           </div>
+          {userTier.isBetaTester && (
+            <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-[10px] font-black uppercase">
+              <Star size={10} />
+              Beta Tester
+            </div>
+          )}
         </div>
       </div>
 

@@ -352,3 +352,104 @@ export async function queueVideo(recipeId: string, caption: string) {
   if (error) throw error
   return data
 }
+
+// ===== TIER & USAGE TRACKING =====
+
+export async function getUserTier(): Promise<{ tier: string; scanCount: number; scanLimit: number; isBetaTester: boolean }> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { tier: 'free', scanCount: 0, scanLimit: 15, isBetaTester: false }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('tier, scan_count, scan_limit, is_beta_tester')
+    .eq('id', user.id)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  
+  return {
+    tier: data?.tier || 'free',
+    scanCount: data?.scan_count || 0,
+    scanLimit: data?.scan_limit || 15,
+    isBetaTester: data?.is_beta_tester || false,
+  }
+}
+
+export async function incrementScanCount(): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('scan_count, scan_month, tier')
+    .eq('id', user.id)
+    .single()
+
+  const currentMonth = new Date().toISOString().slice(0, 7)
+  const newCount = (profile?.scan_count || 0) + 1
+
+  await supabase
+    .from('profiles')
+    .update({ scan_count: newCount, scan_month: currentMonth })
+    .eq('id', user.id)
+}
+
+export async function checkFeatureAccess(_feature: 'shopping_list' | 'cooking_timer' | 'substitution_ai' | 'meal_plan'): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tier')
+    .eq('id', user.id)
+    .single()
+
+  const tier = profile?.tier || 'free'
+  
+  // Free tier gets basic features only
+  if (tier === 'free' || tier === 'core') {
+    return false // These are Pro+ features
+  }
+  
+  // Pro and Lifetime get everything
+  return tier === 'pro' || tier === 'lifetime'
+}
+
+// ===== SUBSTITUTION-AWARE RECIPE GENERATION =====
+
+export async function generateAiRecipeWithSubstitutions(ingredients: string[]) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  // Check Pro access for substitution feature
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tier, ai_generation_count')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) throw new Error('Profile not found')
+
+  const tier = profile.tier || 'free'
+  const includeSubstitutions = tier === 'pro' || tier === 'lifetime'
+
+  // Free tier limit check
+  if (tier === 'free' && profile.ai_generation_count >= 3) {
+    throw new Error('FREE_LIMIT_REACHED')
+  }
+
+  // Call Edge Function with substitution flag
+  const { data, error } = await supabase.functions.invoke('generate-recipe', {
+    body: { ingredients, includeSubstitutions }
+  })
+
+  if (error) throw error
+
+  // Increment count
+  await supabase
+    .from('profiles')
+    .update({ ai_generation_count: (profile.ai_generation_count || 0) + 1 })
+    .eq('id', user.id)
+
+  return data
+}

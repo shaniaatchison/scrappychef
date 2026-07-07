@@ -6,7 +6,9 @@ const migrations = [
   "20260625000000_automated_video.sql",
   "20260625000001_video_trigger.sql",
   "20260625000002_video_cron.sql",
-  "20260626000000_premium_fixes.sql"
+  "20260626000000_premium_fixes.sql",
+  "20260626000001_push_notifications.sql",
+  "20260626000002_auto_video_cron.sql"
 ];
 
 const functionUrl = "https://iynmkpdqvbyrrdbvqrra.supabase.co/functions/v1/run-sql";
