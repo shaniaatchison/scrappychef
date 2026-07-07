@@ -14,6 +14,7 @@ import ShoppingList from './components/ShoppingList'
 import LinksPage from './pages/LinksPage'
 import StickerPage from './pages/StickerPage'
 import PricingPage from './pages/PricingPage'
+import DownloadPage from './pages/DownloadPage'
 import type { User } from '@supabase/supabase-js'
 
 function Layout({ children }: { children: React.ReactNode }) {
@@ -138,6 +139,7 @@ function App() {
       <Route path="/links" element={<LinksPage />} />
       <Route path="/sticker" element={<StickerPage />} />
       <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/download" element={<DownloadPage />} />
       
       <Route path="/" element={
         session ? (
